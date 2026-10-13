@@ -9,8 +9,5 @@
     "@module-federation/enhanced": "2.9.2",
     "webpack": "5.110.3",
     "webpack-cli": "7.2.3"
-  },
-  "dependencies": {
-    "react": "18.3.1"
   }
 }

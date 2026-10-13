@@ -5,12 +5,12 @@ Minimal repro of a Module Federation 2 remote init deadlock in `@module-federati
 ## Rules
 
 - Keep the repro minimal. Every file should be needed to trigger or observe the deadlock.
-- Exact versions in `package.json` (no `^` or `~`).
+- No runtime dependencies. Exact versions in `package.json` (no `^` or `~`).
 - Never commit `node_modules` or `dist`.
 
 ## Layout
 
-- `webpack.config.js` builds three apps into `dist/`. `host` uses `shareStrategy: 'loaded-first'`. `remote-a` and `remote-b` use the default `version-first` and list each other as remotes. All share `react` as a singleton (eager in the host).
+- `webpack.config.js` builds three apps into `dist/`. `host` uses `shareStrategy: 'loaded-first'`. `remote-a` and `remote-b` use the default `version-first` and list each other as remotes. Both remotes declare a placeholder `shared` entry that nothing imports, which is what makes webpack emit the federation sharing runtime.
 - `host/index.js` imports `remoteA/Widget`, then `remoteB/Page` after `?gap=<ms>`, and logs `DEADLOCK` if either is still pending after 5s.
 - `server.js` serves on port 3000 and delays `remote-b/remoteEntry.js` by 1000ms.
 - `debug-plugin.js` is a runtime plugin, added to all builds when `DEBUG=1`, that logs container init start/done (with `initScope` tokens) and shared loads per federation instance.

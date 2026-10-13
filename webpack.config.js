@@ -5,8 +5,6 @@ const ORIGIN = 'http://localhost:3000'
 
 const runtimePlugins = process.env.DEBUG ? [require.resolve('./debug-plugin.js')] : []
 
-const shared = (eager) => ({ react: { singleton: true, eager, requiredVersion: '18.3.1' } })
-
 const app = (name, federation) => ({
   name,
   mode: 'development',
@@ -27,14 +25,14 @@ module.exports = [
     filename: 'remoteEntry.js',
     exposes: { './Widget': './remote-a/Widget.js' },
     remotes: { remoteB: `remoteB@${ORIGIN}/remote-b/remoteEntry.js` },
-    shared: shared(false)
+    shared: { dep: { import: false } }
   }),
   app('remote-b', {
     name: 'remoteB',
     filename: 'remoteEntry.js',
     exposes: { './Page': './remote-b/Page.js' },
     remotes: { remoteA: `remoteA@${ORIGIN}/remote-a/remoteEntry.js` },
-    shared: shared(false)
+    shared: { dep: { import: false } }
   }),
   app('host', {
     name: 'host',
@@ -42,7 +40,6 @@ module.exports = [
     remotes: {
       remoteA: `remoteA@${ORIGIN}/remote-a/remoteEntry.js`,
       remoteB: `remoteB@${ORIGIN}/remote-b/remoteEntry.js`
-    },
-    shared: shared(true)
+    }
   })
 ]

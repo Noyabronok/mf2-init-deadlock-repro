@@ -1,12 +1,12 @@
 # Module Federation 2 remote init deadlock
 
-Minimal reproduction of a deadlock in `@module-federation/enhanced` 2.9.2 (webpack). Two remotes that list each other as remotes, a host that loads both, and one shared singleton (`react`). If the host imports the second remote while the first remote's init is still waiting for the second remote's entry, both imports stay pending forever. No error is thrown and no exposed chunk is requested.
+Minimal reproduction of a deadlock in `@module-federation/enhanced` 2.9.2 (webpack). Two remotes that list each other as remotes and declare a `shared` entry, plus a host that loads both. No framework and no runtime dependencies. If the host imports the second remote while the first remote's init is still waiting for the second remote's entry, both imports stay pending forever. No error is thrown and no exposed chunk is requested.
 
 ## Setup
 
 - `host` uses `shareStrategy: 'loaded-first'` and lazily imports `remoteA/Widget`, then `remoteB/Page` after `?gap=<ms>`.
 - `remote-a` and `remote-b` use the default `shareStrategy` (`version-first`) and reference each other. The cross imports are lazy and never called.
-- All three share `react` as a singleton (eager in the host).
+- Both remotes declare a placeholder `shared: { dep: { import: false } }`. Nothing imports it. The host declares no `shared`.
 - `server.js` delays `remote-b/remoteEntry.js` by 1000ms to stand in for a slow network.
 
 ## Run
@@ -36,7 +36,7 @@ Any gap that starts the second import while `remote-b/remoteEntry.js` is still l
 
 | change | result |
 | --- | --- |
-| remove `react` from `shared` everywhere | resolves |
+| remove `shared` from both remotes | resolves |
 | remove the `remoteB` remote and the `remoteB/Page` import from `remote-a` (no cycle) | resolves |
 | `shareStrategy: 'loaded-first'` on both remotes | resolves |
 | `shareStrategy: 'version-first'` on the host | deadlocks at every gap, including 2000 |
@@ -48,13 +48,13 @@ Without any `shared` entry, webpack emits its plain sharing runtime instead of t
 `DEBUG=1 npm start` adds `debug-plugin.js` to all three builds. It logs container init and shared loads per federation instance. At `?gap=100`:
 
 ```
-[138ms]  host: init remoteA start initScope=[]
-[138ms]  remoteA: request remoteB              remote-a's version-first init starts loading remote-b's entry
-[165ms]  host: request remoteB/Page            joins the same in-flight entry load
-[1153ms] host: init remoteB start initScope=[]
-[1153ms] remoteA: init remoteB start initScope=[remoteA]
-[1153ms] remoteB: request remoteA
-[1155ms] remoteB: init remoteA start initScope=[remoteB]
+[39ms]   host: init remoteA start initScope=[]
+[39ms]   remoteA: request remoteB              remote-a's version-first init starts loading remote-b's entry
+[131ms]  host: request remoteB/Page            joins the same in-flight entry load
+[1050ms] host: init remoteB start initScope=[]
+[1050ms] remoteA: init remoteB start initScope=[remoteA]
+[1050ms] remoteB: request remoteA
+[1052ms] remoteB: init remoteA start initScope=[remoteB]
          nothing finishes
 ```
 
@@ -73,8 +73,8 @@ In `initializeSharing.js`, a nested call (one whose `initScope` already holds an
 +		if (promise) return initScope.length > 1 ? void 0 : promise;
 ```
 
-Patched locally in `node_modules`, every gap from 0 to 2000ms resolves and `react` still loads from the share scope. This matches what the cycle guard already does when both calls share one `initScope`.
+Patched locally in `node_modules`, every gap from 0 to 2000ms resolves. This matches what the cycle guard already does when both calls share one `initScope`.
 
 ## Versions
 
-`@module-federation/enhanced` 2.9.2, `webpack` 5.110.3, `webpack-cli` 7.2.3, `react` 18.3.1, Node 24.13.0, Chromium (Playwright).
+`@module-federation/enhanced` 2.9.2, `webpack` 5.110.3, `webpack-cli` 7.2.3, Node 24.21.0, Chromium (Playwright).
