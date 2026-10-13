@@ -6,7 +6,7 @@ Minimal reproduction of a deadlock in `@module-federation/enhanced` 2.9.2 (webpa
 
 - `host` uses `shareStrategy: 'loaded-first'` and lazily imports `remoteA/Widget`, then `remoteB/Page` after `?gap=<ms>`.
 - `remote-a` and `remote-b` use the default `shareStrategy` (`version-first`) and reference each other. The cross imports are lazy and never called.
-- Both remotes declare a placeholder `shared: { dep: { import: false } }`. Nothing imports it. The host declares no `shared`.
+- Both remotes share a one-line local module, `shared: { dep: { import: './dep.js', version: '1.0.0' } }`. Nothing imports it. The host declares no `shared`.
 - `server.js` delays `remote-b/remoteEntry.js` by 1000ms to stand in for a slow network.
 
 ## Run
@@ -49,13 +49,13 @@ Without any `shared` entry, webpack emits its plain sharing runtime instead of t
 `DEBUG=1 npm start` adds `debug-plugin.js` to all three builds. It logs container init and shared loads per federation instance. At `?gap=100`:
 
 ```
-[39ms]   host: init remoteA start initScope=[]
-[39ms]   remoteA: request remoteB              remote-a's version-first init starts loading remote-b's entry
-[131ms]  host: request remoteB/Page            joins the same in-flight entry load
-[1050ms] host: init remoteB start initScope=[]
-[1050ms] remoteA: init remoteB start initScope=[remoteA]
-[1050ms] remoteB: request remoteA
-[1052ms] remoteB: init remoteA start initScope=[remoteB]
+[73ms]   host: init remoteA start initScope=[]
+[73ms]   remoteA: request remoteB              remote-a's version-first init starts loading remote-b's entry
+[163ms]  host: request remoteB/Page            joins the same in-flight entry load
+[1094ms] host: init remoteB start initScope=[]
+[1094ms] remoteA: init remoteB start initScope=[remoteA]
+[1095ms] remoteB: request remoteA
+[1096ms] remoteB: init remoteA start initScope=[remoteB]
          nothing finishes
 ```
 

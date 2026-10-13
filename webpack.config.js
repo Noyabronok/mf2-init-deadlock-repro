@@ -25,14 +25,14 @@ module.exports = [
     filename: 'remoteEntry.js',
     exposes: { './Widget': './remote-a/Widget.js' },
     remotes: { remoteB: `remoteB@${ORIGIN}/remote-b/remoteEntry.js` },
-    shared: { dep: { import: false } }
+    shared: { dep: { import: './dep.js', version: '1.0.0' } }
   }),
   app('remote-b', {
     name: 'remoteB',
     filename: 'remoteEntry.js',
     exposes: { './Page': './remote-b/Page.js' },
     remotes: { remoteA: `remoteA@${ORIGIN}/remote-a/remoteEntry.js` },
-    shared: { dep: { import: false } }
+    shared: { dep: { import: './dep.js', version: '1.0.0' } }
   }),
   app('host', {
     name: 'host',
