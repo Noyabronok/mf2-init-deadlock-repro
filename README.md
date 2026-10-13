@@ -37,6 +37,7 @@ Any gap that starts the second import while `remote-b/remoteEntry.js` is still l
 | change | result |
 | --- | --- |
 | remove `shared` from both remotes | resolves |
+| share `react` 18.3.1 as a singleton instead of `dep` (eager in the host) | deadlocks the same way |
 | remove the `remoteB` remote and the `remoteB/Page` import from `remote-a` (no cycle) | resolves |
 | `shareStrategy: 'loaded-first'` on both remotes | resolves |
 | `shareStrategy: 'version-first'` on the host | deadlocks at every gap, including 2000 |
